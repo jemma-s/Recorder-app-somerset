@@ -14,7 +14,7 @@ from EM1000_functions import setup_driver, input_swimmer_search, extract_swimmer
 import time
 
 
-class UploadTab(QWidget):
+class UploadTabOtherClub(QWidget):
     """Tab for initially uploading member data into the app"""
     
     def __init__(self, data_store):
@@ -28,12 +28,12 @@ class UploadTab(QWidget):
         layout = QVBoxLayout(self)
         
         # Title
-        title = QLabel("Upload the members data file")
+        title = QLabel("Upload the members data file - other club")
         title.setAlignment(Qt.AlignmentFlag.AlignCenter)
         title.setStyleSheet("font-size: 18px; font-weight: bold; margin: 20px;")
         layout.addWidget(title)
 
-        info2 = QLabel("Before proceeding, download the members report from Swim Central - or ask someone with access to send it to you")
+        info2 = QLabel("Before proceeding, you need an excel of the swimmers that you want to get data of")
         info2.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(info2)
         
@@ -45,8 +45,8 @@ class UploadTab(QWidget):
         layout.addWidget(self.upload_btn)
         
         # Upload instructions
-        layout.addWidget(QLabel("Note: Make sure the file is in the following format"))
-        layout.addWidget(QLabel("First name | Surname | DOB | Gender | Account status | Add date | Membership type | MSWA Number | Club"))
+        layout.addWidget(QLabel("Note: Make sure the file is in the following format and the Name is in format SURNAME, FIRSTNAME"))
+        layout.addWidget(QLabel("Name | Club | Age | Age Group"))
         #layout.addSpacing(10)
         
         # File status
@@ -68,8 +68,7 @@ class UploadTab(QWidget):
             "All Supported Files (*.xlsx *.xls *.csv);;Excel Files (*.xlsx *.xls);;CSV Files (*.csv)")
         
         if file_path:
-            column_names = ["First name", "Surname", "DOB", "Gender", "Status", 
-                                    "Start date", "Member type", "MSWA number", "Club"]
+            column_names = ["Name", "Club", "Age", "Age Group"]
             try:
                 if file_path.endswith('.csv'):
                     df = pd.read_csv(file_path,
@@ -81,13 +80,8 @@ class UploadTab(QWidget):
                                        skiprows = 1)
 
                 df.columns = column_names
-                df["DOB"] = pd.to_datetime(df["DOB"])
-                df["Full name"] = df["First name"].str.cat(df["Surname"], sep=" ")
                 
-                if "Status" in df.columns:
-                    df = df[df.Status != "Terminated"]
-                
-                self.data_store.set_members_data(df)
+                self.data_store.set_members_other_club_data(df)
                 self.display_members_table(df)
                 
                 self.file_status.setText(f"✓ Loaded {len(df)} active members from {file_path.split('/')[-1]}")

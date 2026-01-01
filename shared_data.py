@@ -12,6 +12,8 @@ class DataStore:
             cls._instance = super(DataStore, cls).__new__(cls)
             cls._instance.members_df = None  # Original uploaded data
             cls._instance.results_df = None   # Scraped results
+            cls._instance.members_other_club_df = None   # Scraped results
+            cls._instance.results_other_club_df = None   # Scraped results
         return cls._instance
     
     def set_members_data(self, df):
@@ -37,6 +39,30 @@ class DataStore:
     def has_results_data(self):
         """Check if results data exists"""
         return self.results_df is not None and not self.results_df.empty
+    
+    def set_members_other_club_data(self, df):
+        """Store the uploaded swimmers DataFrame"""
+        self.members_other_club_df = df
+    
+    def get_members_other_club_data(self):
+        """Retrieve the swimmers DataFrame"""
+        return self.members_other_club_df
+    
+    def set_results_other_club_data(self, df):
+        """Store the scraped results DataFrame"""
+        self.results_other_club_df = df
+    
+    def get_results_other_club_data(self):
+        """Retrieve the results DataFrame"""
+        return self.results_other_club_df
+    
+    def has_members_other_club_data(self):
+        """Check if swimmers data exists"""
+        return self.members_other_club_df is not None and not self.members_other_club_df.empty
+    
+    def has_results_other_club_data(self):
+        """Check if results data exists"""
+        return self.results_other_club_df is not None and not self.results_other_club_df.empty
     
     def get_member_name(self, mswa_id):
         #Get member name from MSWA ID

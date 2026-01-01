@@ -132,8 +132,8 @@ class BirthdayTab(QWidget):
             
             # Prepare table data
             #if 'First name' in df_filtered.columns and 'Surname' in df_filtered.columns:
-            df_filtered['Full Name'] = df_filtered['First name'] + ' ' + df_filtered['Surname']
-            display_cols = ['Full Name', 'Birth_Day', 'Birth_Date', 'Age']
+            #df_filtered['Full Name'] = df_filtered['First name'] + ' ' + df_filtered['Surname']
+            display_cols = ['Full name', 'Birth_Day', 'Birth_Date', 'Age']
 
             
             if 'MSWA number' in df_filtered.columns:

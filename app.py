@@ -12,6 +12,9 @@ from tabs.upload_tab import UploadTab
 from tabs.scrape_tab import ScrapeTab
 from tabs.visualize_tab import VisualizeTab
 from tabs.birthday_tab import BirthdayTab
+from tabs.meets_tab import MeetsTab
+from tabs.upload_tab_other_club import UploadTabOtherClub
+from tabs.scrape_tab_other_club import ScrapeTabOtherClub
 
 # Import shared data store
 from shared_data import DataStore
@@ -58,12 +61,18 @@ class E1000App(QMainWindow):
         self.scrape_tab = ScrapeTab(self.data_store)
         self.visualize_tab = VisualizeTab(self.data_store)
         self.birthday_tab = BirthdayTab(self.data_store)
+        self.meets_tab = MeetsTab(self.data_store)
+        self.upload_tab_other_club = UploadTabOtherClub(self.data_store)
+        self.scrape_tab_other_club = ScrapeTabOtherClub(self.data_store)
         
         # Add tabs to widget
         self.tabs.addTab(self.upload_tab, "🦭 Upload Members Data")
         self.tabs.addTab(self.birthday_tab, "🎂 Birthday Calendar")
         self.tabs.addTab(self.scrape_tab, "📥 Get E1000 Data")
         self.tabs.addTab(self.visualize_tab, "📊 Visualize E1000 Data")
+        self.tabs.addTab(self.meets_tab, "🏎️ Get Swim Meets Results")
+        self.tabs.addTab(self.upload_tab_other_club, "🔎 Upload Members Data - for other clubs")
+        self.tabs.addTab(self.scrape_tab_other_club, "🔍 Get E1000 Data - for other clubs")
 
         
         # Connect tab change signal to update tabs
@@ -105,6 +114,8 @@ class E1000App(QMainWindow):
             self.birthday_tab.refresh_data()
         elif index == 2:  # Birthday tab
             self.scrape_tab.refresh_data()
+        elif index == 6:  # Other club data tab
+            self.scrape_tab_other_club.refresh_data()
 
 
 if __name__ == '__main__':
