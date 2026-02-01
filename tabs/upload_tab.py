@@ -81,7 +81,7 @@ class UploadTab(QWidget):
                                        skiprows = 1)
 
                 df.columns = column_names
-                df["DOB"] = pd.to_datetime(df["DOB"])
+                df["DOB"] = pd.to_datetime(df["DOB"], format='%d/%m/%Y')
                 df["Full name"] = df["First name"].str.cat(df["Surname"], sep=" ")
                 
                 if "Status" in df.columns:

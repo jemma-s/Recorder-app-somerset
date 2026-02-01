@@ -1,5 +1,9 @@
 """
 Main application entry point for E1000 PyQt6 App
+Note for my computer: uses virtual environment somerset_venv
+
+
+Remember: conda install
 """
 import sys
 import pandas as pd
