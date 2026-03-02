@@ -1,10 +1,8 @@
-"""
-Main application entry point for E1000 PyQt6 App
-Note for my computer: uses virtual environment somerset_venv
+#Main application entry point for E1000 PyQt6 App
+#Note for my computer: uses virtual environment somerset_venv
+#somerset_venv\Scripts\activate *** do this in powershell
+#deactivate
 
-
-Remember: conda install
-"""
 import sys
 import pandas as pd
 from PyQt6.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QTabWidget
@@ -19,6 +17,7 @@ from tabs.birthday_tab import BirthdayTab
 from tabs.meets_tab import MeetsTab
 from tabs.upload_tab_other_club import UploadTabOtherClub
 from tabs.scrape_tab_other_club import ScrapeTabOtherClub
+from tabs.other_club_members import Other_Club_Members
 
 # Import shared data store
 from shared_data import DataStore
@@ -68,6 +67,7 @@ class E1000App(QMainWindow):
         self.meets_tab = MeetsTab(self.data_store)
         self.upload_tab_other_club = UploadTabOtherClub(self.data_store)
         self.scrape_tab_other_club = ScrapeTabOtherClub(self.data_store)
+        self.scrape_tab_other_club_members = Other_Club_Members(self.data_store)
         
         # Add tabs to widget
         self.tabs.addTab(self.upload_tab, "🦭 Upload Members Data")
@@ -77,6 +77,7 @@ class E1000App(QMainWindow):
         self.tabs.addTab(self.meets_tab, "🏎️ Get Swim Meets Results")
         self.tabs.addTab(self.upload_tab_other_club, "🔎 Upload Members Data - for other clubs")
         self.tabs.addTab(self.scrape_tab_other_club, "🔍 Get E1000 Data - for other clubs")
+        self.tabs.addTab(self.scrape_tab_other_club_members, "🪼 Find members - for other clubs")
 
         
         # Connect tab change signal to update tabs

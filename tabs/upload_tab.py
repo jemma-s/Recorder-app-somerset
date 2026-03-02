@@ -68,8 +68,11 @@ class UploadTab(QWidget):
             "All Supported Files (*.xlsx *.xls *.csv);;Excel Files (*.xlsx *.xls);;CSV Files (*.csv)")
         
         if file_path:
-            column_names = ["First name", "Surname", "DOB", "Gender", "Status", 
-                                    "Start date", "Member type", "MSWA number", "Club"]
+            #column_names = ["First name", "Surname", "DOB", "Gender", "Status", 
+            #  
+            column_names = ["First name", "Surname", 
+                            "Age", "DOB", 
+                            "Gender", "MSWA number"] 
             try:
                 if file_path.endswith('.csv'):
                     df = pd.read_csv(file_path,
@@ -86,6 +89,9 @@ class UploadTab(QWidget):
                 
                 if "Status" in df.columns:
                     df = df[df.Status != "Terminated"]
+                
+                # Note to future Jemma - add error checking here. If there's an error, there's an ID number missing from the CSV
+                df["MSWA number"] = df['MSWA number'].astype(int)
                 
                 self.data_store.set_members_data(df)
                 self.display_members_table(df)
