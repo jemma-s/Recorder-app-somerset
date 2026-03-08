@@ -132,7 +132,7 @@ class ScrapeTab(QWidget):
         year_layout.addWidget(QLabel("Select a year:"))
         self.year_combo = QComboBox()
         self.year_combo.addItems(['2022', '2023', '2024', '2025', '2026', '2027', '2028'])
-        self.year_combo.setCurrentText('2025')
+        self.year_combo.setCurrentText('2026')
         year_layout.addWidget(self.year_combo)
         year_layout.addStretch()
         layout.addLayout(year_layout)

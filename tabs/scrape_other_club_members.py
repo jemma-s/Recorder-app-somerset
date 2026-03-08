@@ -10,11 +10,11 @@ from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
 from PyQt6.QtCore import QThread, pyqtSignal, Qt
 
 # Import scraper functions
-from EM1000_functions_other_club import setup_driver, input_swimmer_search, extract_swimmer_data
+from EM1000_functions import setup_driver, input_swimmer_search, extract_swimmer_data
 import time
 
 
-class ScraperThreadOtherClub(QThread):
+class ScraperThreadOtherClubSelected(QThread):
     """Background thread for web scraping with progress updates"""
     progress_update = pyqtSignal(int, int, str)  # current, total, message
     scraping_complete = pyqtSignal(object)  # DataFrame
@@ -34,25 +34,31 @@ class ScraperThreadOtherClub(QThread):
             print("DEBUG: Driver setup complete")
             
             all_results = []
-            df = self.data_store.get_members_other_club_data()
+            df = self.data_store.get_results_selected_members_other_club_df()
             if df is None or len(df) == 0:
                 self.scraping_error.emit("No member data available")
                 return
-            swimmer_name = df["Name"].tolist()  # Convert to list
-            total = len(swimmer_name)
+            # Filtering for the selected club
+            df = df[df['Club'] == self.data_store.get_selected_club()]
             
-            for idx, swimmer_name in enumerate(swimmer_name):
+            mswa_ids = df["ID"].tolist()  # Convert to list
+            total = len(mswa_ids)
+            
+            for idx, mswa_id in enumerate(mswa_ids):
                 if not self.is_running:
                     break
                 
-                print(f"\nDEBUG: Processing swimmer {idx+1}/{total}, Name: {swimmer_name}")
-                self.progress_update.emit(idx + 1, total, f"Searching for {swimmer_name} (ID: {swimmer_name})...")
+                # Get swimmer name
+                swimmer_name = self.data_store.get_selected_club_member_name(mswa_id)
+                
+                print(f"\nDEBUG: Processing swimmer {idx+1}/{total}, ID: {mswa_id}, Name: {swimmer_name}")
+                self.progress_update.emit(idx + 1, total, f"Searching for {swimmer_name} (ID: {mswa_id})...")
                 
                 # Convert ID to string
-                #mswa_id_str = str(int(mswa_id)) if isinstance(mswa_id, float) else str(mswa_id)
+                mswa_id_str = str(int(mswa_id)) if isinstance(mswa_id, float) else str(mswa_id)
                 
                 # Search for swimmer
-                search_result = input_swimmer_search(wd, self.year, swimmer_name)
+                search_result = input_swimmer_search(wd, self.year, mswa_id_str)
                 
                 if search_result:
                     time.sleep(0.3)  # Wait for page to load
@@ -68,11 +74,11 @@ class ScraperThreadOtherClub(QThread):
                         self.progress_update.emit(idx + 1, total, 
                                                 f"{swimmer_name} - Found {result_count} results ✓")
                     else:
-                        print(f"DEBUG: No data extracted for {swimmer_name}")
-                        self.progress_update.emit(idx + 1, total, f"ID {swimmer_name} - No results found")
+                        print(f"DEBUG: No data extracted for {mswa_id}")
+                        self.progress_update.emit(idx + 1, total, f"ID {mswa_id} - No results found")
                 else:
-                    print(f"DEBUG: Search failed for {swimmer_name}")
-                    self.progress_update.emit(idx + 1, total, f"ID {swimmer_name} - Search failed")
+                    print(f"DEBUG: Search failed for {mswa_id}")
+                    self.progress_update.emit(idx + 1, total, f"ID {mswa_id} - Search failed")
                 
                 time.sleep(0.1)
             
@@ -85,6 +91,7 @@ class ScraperThreadOtherClub(QThread):
                 combined_df = pd.concat(all_results, ignore_index=True)
                 print(f"DEBUG: Combined {len(combined_df)} total results")
                 self.scraping_complete.emit(combined_df)
+
             else:
                 print("DEBUG: No results found for any swimmers")
                 self.scraping_complete.emit(pd.DataFrame())
@@ -100,13 +107,14 @@ class ScraperThreadOtherClub(QThread):
         self.is_running = False
 
 
-class ScrapeTabOtherClub(QWidget):
+class ScrapeTabOtherClubSelected(QWidget):
     """Tab for scraping E1000 data from MSA website"""
     
     def __init__(self, data_store):
         super().__init__()
         self.data_store = data_store
         self.scraper_thread = None
+        self.scraped_results = None
         self.init_ui()
     
     def init_ui(self):
@@ -129,10 +137,15 @@ class ScrapeTabOtherClub(QWidget):
         year_layout.addWidget(QLabel("Select a year:"))
         self.year_combo = QComboBox()
         self.year_combo.addItems(['2022', '2023', '2024', '2025', '2026', '2027', '2028'])
-        self.year_combo.setCurrentText('2025')
+        self.year_combo.setCurrentText('2026')
         year_layout.addWidget(self.year_combo)
         year_layout.addStretch()
         layout.addLayout(year_layout)
+
+        # Info on current club selected
+        self.info2 = QLabel("Current club selected: NONE")
+        self.info2.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(self.info2)
         
         
         # Scrape button
@@ -183,20 +196,20 @@ class ScrapeTabOtherClub(QWidget):
         #self.enable_start_scraping()
 
     def refresh_data(self):
-        self.enable_start_scraping()
+        if self.data_store.has_selected_club() is not None:
+            self.info2.setText(f"Current club selected: {self.data_store.get_selected_club()}")
+            self.enable_start_scraping()
     
     def enable_start_scraping(self):
-        print('this is happening!')
-        print(self.data_store.has_members_other_club_data())
-        if not self.data_store.has_members_other_club_data():
+        if not self.data_store.has_results_selected_members_other_club_df():
             self.scrape_btn.setEnabled(False)
         else:
             self.scrape_btn.setEnabled(True)
     
     def start_scraping(self):
         """Start the scraping process"""
-        if not self.data_store.has_members_other_club_data():
-            QMessageBox.warning(self, "Warning", "Please upload members file first!")
+        if not self.data_store.has_results_selected_members_other_club_df():
+            QMessageBox.warning(self, "Warning", "Please select a club first!")
             return
         
         self.scrape_btn.setEnabled(False)
@@ -210,7 +223,7 @@ class ScrapeTabOtherClub(QWidget):
         
         year = self.year_combo.currentText()
         
-        self.scraper_thread = ScraperThreadOtherClub(self.data_store, year)
+        self.scraper_thread = ScraperThreadOtherClubSelected(self.data_store, year)
         self.scraper_thread.progress_update.connect(self.update_progress)
         self.scraper_thread.scraping_complete.connect(self.scraping_finished)
         self.scraper_thread.scraping_error.connect(self.scraping_failed)

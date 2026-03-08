@@ -32,8 +32,7 @@ class Other_Club_Members(QWidget):
         super().__init__()
         self.data_store = data_store
         self.init_ui()
-        self.meets_store = None
-        self.results_store = None
+        self.club_members = None
     
     def init_ui(self):
         """Initialize the UI"""
@@ -70,6 +69,20 @@ class Other_Club_Members(QWidget):
         #self.load_meets_btn.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(self.load_meets_btn)
         layout.addStretch()
+
+        # Drop down club select
+        self.club_select_info = QLabel("Select a club that you want to find the swimmers of")
+        self.club_select_info_2 = QLabel("You can find a PDF list of clubs and codes HERE: https://mastersswimming.org.au/about/states-territory-and-affiliated-clubs/")
+        self.club_select_info.setVisible(False) # Becomes visible after the swimmers have been loaded in and year selected
+        layout.addWidget(self.club_select_info)
+        self.club_select_info_2.setVisible(False) # Becomes visible after the swimmers have been loaded in and year selected
+        layout.addWidget(self.club_select_info_2)
+
+        self.club_select = QComboBox()
+        self.club_select.setVisible(False) # Becomes visible after the swimmers have been loaded in and year selected
+        self.club_select.currentIndexChanged.connect(self.display_swimmers_table)
+        layout.addWidget(self.club_select)
+        layout.addSpacing(50)
         
         # Swimmers table
         self.swimmers_table = QTableWidget()
@@ -77,44 +90,7 @@ class Other_Club_Members(QWidget):
         layout.addWidget(self.swimmers_table)
         #layout.addSpacing(50)
 
-        self.results_combobox = QComboBox() #text: "What do you want to find?"
-        self.results_combobox.addItems(["Results of a certain meet",
-                                        "Results of a certain swimmer for the year", 
-                                        "All results in the year",
-                                        "Combined year results - For awards"])
-        self.results_combobox.currentTextChanged.connect(self.meets_swimmer_selector)
-        self.results_combobox.setVisible(False)
-        layout.addWidget(self.results_combobox)
 
-        # Status label
-        self.status_label = QLabel("")
-        self.status_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        layout.addWidget(self.status_label)
-
-        self.meets_swimmer_combobox = QComboBox() #text: "Select an option"
-        #self.meets_swimmer_combobox.addItems(self.meets_swimmer_selector)
-        self.meets_swimmer_combobox.setVisible(False)
-        layout.addWidget(self.meets_swimmer_combobox)
-        layout.addStretch()
-
-        self.load_results_btn = QPushButton("👆 Find the results")
-        self.load_results_btn.clicked.connect(self.load_results)
-        self.load_results_btn.setVisible(False)
-        layout.addWidget(self.load_results_btn)
-
-        # Results table
-        self.results_table = QTableWidget()
-        self.results_table.setVisible(False)
-        layout.addWidget(self.results_table)
-        layout.addSpacing(50)
-
-        # Download button
-        layout.addSpacing(50)
-        self.download_btn = QPushButton("📥 Download results excel")
-        self.download_btn.clicked.connect(self.download_results)
-        self.download_btn.setVisible(False)
-        #self.download_btn.setStyleSheet(self._get_download_button_style())
-        layout.addWidget(self.download_btn)
 
 
      
@@ -131,134 +107,69 @@ class Other_Club_Members(QWidget):
         if year == "2025":
             url = "https://portal.msarc.org.au/meets/index.php?EventId=154331&filter=*&split=no&scope=&js=on"
         elif year == "2026":
-            url = "https://portal.msarc.org.au/meets/index.php?EventId=154524&filter=*&split=no&scope=&js=on"
+            #url = "https://portal.msarc.org.au/meets/index.php?EventId=154524&filter=*&split=no&scope=&js=on"
+            url = "https://portal.msarc.org.au/meets/index.php?EventId=154524"
         else:
             # This will need to be improved: either the user can copy and paste the URL in or....?
             url = "TBA"
 
         data = requests.get(url).text
         soup = BeautifulSoup(data, 'html.parser') #Getting the HTML
+        #print(soup)
+        rows = []
 
-        print(soup)
+        for tr in soup.find_all("tr"):
+            cells = tr.find_all("td", class_="result")
+            if len(cells) >4: # Will stop the loop if it's an empty list
+                name = cells[1].get_text(strip=True)
+                age  = cells[2].get_text(strip=True)
+                club = cells[3].get_text(strip=True)
+                id_  = cells[4].get_text(strip=True)
+                rows.append({"Name": name, "Age": age, "Club": club, "ID": id_})
 
+        df = pd.DataFrame.from_dict(rows)
+        df = df.drop_duplicates() #removing duplicates as we only need single instances
+        #print(df)
+        self.club_members = df #Storing the df for later use
+        self.data_store.set_results_selected_members_other_club_df(df)
 
-        #self.meets_store = df
-        #self.results_combobox.setVisible(True)
-        #self.display_swimmers_table(df)
+        # Finding list of unique clubs for drop down
+        unique_clubs = sorted(df['Club'].unique())
+        self.club_select.addItems(unique_clubs)
+        self.club_select.setVisible(True)
+
+        self.club_select_info.setVisible(True) # Becomes visible after the swimmers have been loaded in and year selected
+        self.club_select_info_2.setVisible(True) # Becomes visible after the swimmers have been loaded in and year selected
+    
+
     
     
     def display_swimmers_table(self, df):
-        """Display members data in table"""
+        """Display members data in table once a year and club is selected"""
+        df = self.club_members
+        selected_club = self.club_select.currentText()
+        df__selected = df[df['Club'] == selected_club]
+        self.data_store.set_selected_club(selected_club)
         self.swimmers_table.setVisible(True)
-        self.swimmers_table.setRowCount(len(df))
-        self.swimmers_table.setColumnCount(len(df.columns))
-        self.swimmers_table.setHorizontalHeaderLabels(df.columns)
+        self.swimmers_table.setRowCount(len(df__selected))
+        self.swimmers_table.setColumnCount(len(df__selected.columns))
+        self.swimmers_table.setHorizontalHeaderLabels(df__selected.columns)
         
-        for i in range(len(df)):
-            for j, col in enumerate(df.columns):
-                item = QTableWidgetItem(str(df.iloc[i, j]))
+        for i in range(len(df__selected)):
+            for j, col in enumerate(df__selected.columns):
+                item = QTableWidgetItem(str(df__selected.iloc[i, j]))
                 self.swimmers_table.setItem(i, j, item)
         
         self.swimmers_table.resizeColumnsToContents()
         header = self.swimmers_table.horizontalHeader()
         header.setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
-
-    def display_results_table(self, df):
-        """Display results data in table"""
-        self.results_table.setVisible(True)
-        self.results_table.setRowCount(len(df))
-        self.results_table.setColumnCount(len(df.columns))
-        self.results_table.setHorizontalHeaderLabels(df.columns)
-        
-        for i in range(len(df)):
-            for j, col in enumerate(df.columns):
-                item = QTableWidgetItem(str(df.iloc[i, j]))
-                self.results_table.setItem(i, j, item)
-        
-        self.results_table.resizeColumnsToContents()
-        header = self.results_table.horizontalHeader()
-        header.setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
-
-    def meets_swimmer_selector(self):
-        """" Output either a list of swimmers as (stored in store data) or a list of meets to choose """
-
-        selected_result_combobox = self.results_combobox.currentText()
-        self.meets_swimmer_combobox.clear()
-        self.load_results_btn.setVisible(True)
-
-        if selected_result_combobox == "Results of a certain swimmer for the year":
-            if not self.data_store.has_members_data():
-                self.show_no_data_message()
-                self.meets_swimmer_combobox.setVisible(False)
-                return
-            else:
-                memberslist = self.data_store.members_df.copy()
-                memberslist = memberslist["Full name"]
-                self.meets_swimmer_combobox.addItems(memberslist.tolist())
-                self.meets_swimmer_combobox.setVisible(True)
-                self.status_label.setText("Select a swimmer")
-        elif selected_result_combobox == "Results of a certain meet":
-            meetslist = self.meets_store
-            meetslist = meetslist['Meet']
-            self.meets_swimmer_combobox.addItems(meetslist.tolist())
-            self.meets_swimmer_combobox.setVisible(True)
-            self.status_label.setText("Select a swim meet")
-        else:
-            self.meets_swimmer_combobox.setVisible(False)
-            self.status_label.setText("")
-            return
         
 
-    def show_no_data_message(self):
-        """Show message when no data is available"""
-        self.load_results_btn.setVisible(False)
-        self.status_label.setText("⚠️ No member data loaded. Please upload members file in the 'Upload Members Data' tab first.")
-        self.status_label.setStyleSheet("color: orange; font-weight: bold; font-size: 14px;")
-
-    def load_results(self):
-        """Loading results for the selected meet/swimmer for the selected option"""
-        selected_result_combobox = self.results_combobox.currentText()
-        selected_meets_swimmer_combobox = self.meets_swimmer_combobox.currentText()
-        year = self.year_combo.currentText()
-
-        if selected_result_combobox == "Results of a certain swimmer for the year":
-            # First we need to find the selected swimmer's MSWA number in the stored df
-            memberslist = self.data_store.members_df.copy()
-            MSWA_number = memberslist.loc[memberslist["Full name"] == selected_meets_swimmer_combobox, "MSWA number"].values.item()
-            firstname = memberslist.loc[memberslist["Full name"] == selected_meets_swimmer_combobox, "First name"].values.item()
-            surname = memberslist.loc[memberslist["Full name"] == selected_meets_swimmer_combobox, "Surname"].values.item()
-
-            df = individual_swimmers_results(MSWA_number, year, firstname, surname)
-            print(df)
         
-        elif selected_result_combobox == "All results in the year":
-            memberslist = self.data_store.members_df.copy()
-            df = all_swimmers_results(memberslist, year)
 
-        elif selected_result_combobox == "Combined year results - For awards":
-            memberslist = self.data_store.members_df.copy()
-            df = all_swimmers_results_grouped_points(memberslist, year)
 
-        if df is not None:
-            self.results_store = df
-            self.display_results_table(df)
-            self.download_btn.setVisible(True)
 
-    
-    def download_results(self):
-        """Download results to Excel"""
-        if self.results_store is None:
-            return
-        
-        file_path, _ = QFileDialog.getSaveFileName(
-            self, "Save Results", "Swim-meet-results.xlsx", "Excel Files (*.xlsx)")
-        
-        if file_path:
-            try:
-                self.results_store.to_excel(file_path, index=False)
-                QMessageBox.information(self, "Success", "Results saved successfully!")
-            except Exception as e:
-                QMessageBox.critical(self, "Error", f"Failed to save: {str(e)}")
+  
 
 
     
