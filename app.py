@@ -5,18 +5,18 @@
 
 import sys
 import pandas as pd
-from PyQt6.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QTabWidget
+from PyQt6.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QTabWidget, QScrollArea
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QPixmap
 
 # Import tab modules
-from tabs.upload_tab import UploadTab
-from tabs.scrape_tab import ScrapeTab
-from tabs.visualize_tab import VisualizeTab
-from tabs.birthday_tab import BirthdayTab
-from tabs.meets_tab import MeetsTab
-from tabs.other_club_members import Other_Club_Members
-from tabs.scrape_other_club_members import ScrapeTabOtherClubSelected
+from tabs.b_upload_tab import UploadTab
+from tabs.d_scrape_tab import ScrapeTab
+from tabs.e_visualize_tab import VisualizeTab
+from tabs.c_birthday_tab import BirthdayTab
+from tabs.f_meets_tab import MeetsTab
+from tabs.g_other_club_members import Other_Club_Members
+from tabs.h_scrape_other_club_members import ScrapeTabOtherClubSelected
 
 # Import shared data store
 from shared_data import DataStore
@@ -47,8 +47,12 @@ class E1000App(QMainWindow):
     
     def init_ui(self):
         """Initialize the user interface"""
+
+
+        self.scroll = QScrollArea()
+
         central_widget = QWidget()
-        self.setCentralWidget(central_widget)
+        #self.setCentralWidget(central_widget)
         main_layout = QVBoxLayout(central_widget)
         
         # Header
@@ -74,13 +78,21 @@ class E1000App(QMainWindow):
         self.tabs.addTab(self.visualize_tab, "📊 Visualize E1000 Data")
         self.tabs.addTab(self.meets_tab, "🏎️ Get Swim Meets Results")
         self.tabs.addTab(self.other_club_members_tab, "🪼 Find members - for other clubs")
-        self.tabs.addTab(self.scrape_other_members_tab, "🎣 Get results - for other clubs")
+        self.tabs.addTab(self.scrape_other_members_tab, "🎣 Get E1000 results - for other clubs")
 
         
         # Connect tab change signal to update tabs
         self.tabs.currentChanged.connect(self.on_tab_changed)
         
         main_layout.addWidget(self.tabs)
+
+        self.scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
+        self.scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.scroll.setStyleSheet("QScrollBar:vertical { width: 20px; }")
+        self.scroll.setWidgetResizable(True)
+        self.scroll.setWidget(central_widget)
+        self.setCentralWidget(self.scroll)
+        self.setGeometry(600, 100, 1000, 1800) #x coordinate at top left, y coordinate at top left, width, height
     
     def create_header(self):
         """Create header with logo and title"""

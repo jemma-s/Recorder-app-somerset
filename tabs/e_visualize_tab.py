@@ -6,13 +6,15 @@ import pandas as pd
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
     QFileDialog, QMessageBox, QComboBox, QTableWidget, QTableWidgetItem,
-    QHeaderView, QFrame, QStackedWidget, QSizePolicy
+    QHeaderView, QFrame, QStackedWidget, QSizePolicy, QScrollArea, QMainWindow
 )
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QColor, QFont
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
+import seaborn as sns
+import textwrap
 
 
 class VisualizeTab(QWidget):
@@ -25,6 +27,7 @@ class VisualizeTab(QWidget):
         self.init_ui()
 
     def init_ui(self):
+
         layout = QVBoxLayout(self)
         layout.setSpacing(12)
 
@@ -79,8 +82,8 @@ class VisualizeTab(QWidget):
         rs_layout.addWidget(rs_label)
 
         self.report_combo = QComboBox()
-        self.report_combo.addItems(["Regular Report", "End-of-Year (EOY) Report"])
-        self.report_combo.setStyleSheet("font-size: 13px; padding: 4px 8px;")
+        self.report_combo.addItems(["Monthly Report", "End-of-Year (EOY) Report"])
+        #self.report_combo.setStyleSheet("font-size: 13px; padding: 4px 8px;")
         self.report_combo.currentIndexChanged.connect(self.switch_report)
         rs_layout.addWidget(self.report_combo)
         rs_layout.addStretch()
@@ -104,6 +107,8 @@ class VisualizeTab(QWidget):
 
         layout.addStretch()
 
+
+
     # ──────────────────────────────────────────────────────────────────────────
     # Page builders
     # ──────────────────────────────────────────────────────────────────────────
@@ -115,12 +120,12 @@ class VisualizeTab(QWidget):
         # Sex filter
         filter_row = QHBoxLayout()
         filter_label = QLabel("Filter by Sex:")
-        filter_label.setStyleSheet("font-weight: bold;")
+        #filter_label.setStyleSheet("font-weight: bold;")
         filter_row.addWidget(filter_label)
 
         self.sex_combo = QComboBox()
-        self.sex_combo.addItems(["All", "F", "M"])
-        self.sex_combo.setStyleSheet("font-size: 13px; padding: 4px 8px;")
+        self.sex_combo.addItems(["All", "Female", "Male"])
+        #self.sex_combo.setStyleSheet("font-size: 13px; padding: 4px 8px;")
         self.sex_combo.currentIndexChanged.connect(self.refresh_regular_report)
         filter_row.addWidget(self.sex_combo)
         filter_row.addStretch()
@@ -135,10 +140,16 @@ class VisualizeTab(QWidget):
         layout.addWidget(self.leaderboard_table)
 
         # Chart
-        self.regular_figure = Figure(figsize=(6, 3), tight_layout=True)
+        self.regular_figure = Figure(figsize=(6, 20), tight_layout=True) #width, height
         self.regular_canvas = FigureCanvas(self.regular_figure)
         self.regular_canvas.setMinimumHeight(250)
         layout.addWidget(self.regular_canvas)
+
+        # Line chart
+        self.line_figure = Figure(figsize=(6, 20), tight_layout=True) #width, height
+        self.line_canvas = FigureCanvas(self.line_figure)
+        self.line_canvas.setMinimumHeight(250)
+        layout.addWidget(self.line_canvas)
 
     def _build_eoy_page(self):
         layout = QVBoxLayout(self.eoy_page)
@@ -229,8 +240,10 @@ class VisualizeTab(QWidget):
 
         # Sex filter
         sex_filter = self.sex_combo.currentText()
+        print(sex_filter)
         if sex_filter != "All" and 'Sex' in df.columns:
-            df = df[df['Sex'] == sex_filter]
+            sex_filter_start = sex_filter[0]
+            df = df[df['Sex'] == sex_filter_start]
 
         # Aggregate points per swimmer
         grouped = (
@@ -239,7 +252,7 @@ class VisualizeTab(QWidget):
             .sort_values('Point', ascending=False)
             .reset_index(drop=True)
         )
-        grouped.insert(0, 'Place', grouped.index + 1)
+        grouped.insert(0, 'Place', grouped['Point'].rank(method='min', ascending=False).astype(int))
 
         # ── Table ──
         cols = list(grouped.columns)
@@ -261,28 +274,108 @@ class VisualizeTab(QWidget):
                         item.setBackground(QColor("#CD7F32"))
                 self.leaderboard_table.setItem(row_idx, col_idx, item)
 
-        # ── Bar chart (top 15) ──
-        top = grouped.head(15)
-        self.regular_figure.clear()
+        # ── Bar chart (top 10) ──
+        # Defining a function for x axis text wrapping
+        def wrap_labels(ax, break_long_words=False):
+            # I'm assuming that None means to break the word when there's a space
+            labels = []
+            for label in ax.get_xticklabels():
+                text = label.get_text()
+                wrapped = text.replace(' ', '\n')
+                if label is not None:
+                    labels.append(wrapped)
+            ax.set_xticklabels(labels, rotation = 0)
+        # Aggregate dependent on stroke
+        top_10 = grouped.head(10)['Name'] #Getting a list of the top 10 swimmers
+
+        #df_stroke = df[df['Name'].isin(top_10)].groupby(['Name', 'Stroke'])['Point'].sum().pivot_table(index='Name', columns='Stroke', values='Point', aggfunc='sum', fill_value=0)
+        df_stroke = df[df['Name'].isin(top_10)].pivot_table(index='Name', columns='Stroke', values='Point', aggfunc='sum', fill_value=0)
+        df_stroke = df_stroke[df_stroke.index.notna()]
+
+        stroke_colours = {
+            'Backstroke':         '#2196F3',
+            'Breaststroke':       '#E91E63',
+            'Butterfly':          '#FF9800',
+            'Freestyle':          '#4CAF50',
+            'Individual Medley':  '#9C27B0'
+        }
+
+        # Pull colors in the same order as df_pivot's columns
+        colours = [stroke_colours[stroke] for stroke in df_stroke.columns]
+
+
+        self.regular_figure.clear() # Removing any old plot
         ax = self.regular_figure.add_subplot(111)
 
-        colors = []
-        for place in top['Place']:
-            if place == 1:
-                colors.append('#FFD700')
-            elif place == 2:
-                colors.append('#C0C0C0')
-            elif place == 3:
-                colors.append('#CD7F32')
-            else:
-                colors.append('#1E40AF')
+        df_stroke.plot(
+            kind = "bar",
+            stacked = True,
+            ax = ax,
+            color = colours
+        )
+        ax.set_xlabel('Name')
+        ax.set_ylabel('Points')
+        #ax.legend(title='Stroke',
+        #          loc = 'upper right')
+        ax.legend(title='Stroke',
+                  loc = 'upper left',
+                  bbox_to_anchor = (1.05,1),
+                    borderaxespad = 0.)
+        wrap_labels(ax)  # Wrapping the x axis text
 
-        ax.barh(top['Name'][::-1], top['Point'][::-1], color=colors[::-1])
-        ax.set_xlabel('Total Points')
-        title_suffix = f" ({sex_filter})" if sex_filter != "All" else ""
-        ax.set_title(f"Leaderboard – Top {len(top)}{title_suffix}")
+        ax.set_title(f"Points by stroke – Top {len(top_10)} {sex_filter}")
         ax.tick_params(axis='y', labelsize=8)
         self.regular_canvas.draw()
+
+        # ------------------ Line graph ----------------------------------------
+        self.line_figure.clear() # Removing any old plot
+        ax_line = self.line_figure.add_subplot(111)
+
+        # Need to add additional stuff to df for line plot
+        final_df = df[df['Name'].isin(top_10)]
+        final_df["Date"] = pd.to_datetime(final_df["Date"], format='%d.%m.%Y')
+        final_df["Point"] = pd.to_numeric(final_df["Point"])
+        final_df = final_df.groupby(["Name", "Date"], as_index=False)["Point"].sum()
+        final_df = final_df.sort_values(["Name", "Date"])
+        final_df['Total points'] = final_df.groupby("Name")["Point"].cumsum()
+
+        #adding in a rinal row per swimmer for the last date
+        latest_date = final_df['Date'].max()
+
+        last_entries = final_df.groupby('Name').tail(1)
+
+        need_moredates = last_entries[last_entries['Date'] < latest_date].copy()
+        need_moredates['Date'] = latest_date
+
+        final_df1 = pd.concat([final_df, need_moredates], ignore_index=True)
+        final_df1 = final_df1.sort_values(['Name', 'Date'])
+
+        #final_df1.pivot(index = 'Date',
+        #                columns = 'Name',
+        #                values = 'Total points')
+        print(final_df1)
+
+        #final_df1.plot.line(ax = ax_line,
+        #                    legend = True)
+        sns.lineplot(data = final_df1,
+                     x = 'Date',
+                     y = 'Total points',
+                     hue = 'Name',
+                     ax = ax_line)
+        ax_line.set_xlabel('Date')
+        ax_line.set_ylabel('Points')
+        #ax.legend(title='Stroke',
+        #          loc = 'upper right')
+        ax_line.legend(title='Name',
+                  loc = 'upper left',
+                  bbox_to_anchor = (1.05,1),
+                    borderaxespad = 0.)
+
+        ax_line.set_title(f"Points over time – Top {len(top_10)} {sex_filter}")
+        ax_line.tick_params(axis='y', labelsize=8)
+        self.line_canvas.draw()
+
+
 
     # ──────────────────────────────────────────────────────────────────────────
     # EOY report
