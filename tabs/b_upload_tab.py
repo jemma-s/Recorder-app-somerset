@@ -71,8 +71,9 @@ class UploadTab(QWidget):
             #column_names = ["First name", "Surname", "DOB", "Gender", "Status", 
             #  
             column_names = ["First name", "Surname", 
-                            "Age", "DOB", 
-                            "Gender", "MSWA number"] 
+                            "DOB", "Gender",
+                            "Status", 
+                            "MSWA number"] 
             try:
                 if file_path.endswith('.csv'):
                     df = pd.read_csv(file_path,
