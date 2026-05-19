@@ -1,7 +1,6 @@
 """
 TAB 5
 Tab for uploading and visualizing E1000 data
-Save as: tabs/visualize_tab.py
 """
 import pandas as pd
 from PyQt6.QtWidgets import (
@@ -241,7 +240,7 @@ class VisualizeTab(QWidget):
 
         # Sex filter
         sex_filter = self.sex_combo.currentText()
-        print(sex_filter)
+        #print(sex_filter)
         if sex_filter != "All" and 'Sex' in df.columns:
             sex_filter_start = sex_filter[0]
             df = df[df['Sex'] == sex_filter_start]
@@ -354,7 +353,7 @@ class VisualizeTab(QWidget):
         #final_df1.pivot(index = 'Date',
         #                columns = 'Name',
         #                values = 'Total points')
-        print(final_df1)
+        #print(final_df1)
 
         #final_df1.plot.line(ax = ax_line,
         #                    legend = True)

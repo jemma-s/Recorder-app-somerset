@@ -12,6 +12,7 @@ from PyQt6.QtCore import QThread, pyqtSignal, Qt
 # Import scraper functions
 from EM1000_functions import setup_driver, input_swimmer_search, extract_swimmer_data
 import time
+from datetime import datetime
 
 
 class ScraperThread(QThread):
@@ -104,7 +105,6 @@ class ScraperThread(QThread):
 
 
 class ScrapeTab(QWidget):
-    """Tab for scraping E1000 data from MSA website"""
     
     def __init__(self, data_store):
         super().__init__()
@@ -123,15 +123,20 @@ class ScrapeTab(QWidget):
         layout.addWidget(title)
         
         # Instructions
-        info = QLabel("This gets endurance results directly from the MSA website (https://e1000.msarc.org.au/results/results.php)")
+        info = QLabel('This gets endurance results directly from the <a href=\"https://e1000.msarc.org.au/results/results.php">MSA website</a>')
         info.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        info.setOpenExternalLinks(True)
         layout.addWidget(info)
+
+        # File status
+        self.file_status = QLabel("")
+        layout.addWidget(self.file_status)
         
         # Year selection
         year_layout = QHBoxLayout()
         year_layout.addWidget(QLabel("Select a year:"))
         self.year_combo = QComboBox()
-        self.year_combo.addItems(['2022', '2023', '2024', '2025', '2026', '2027', '2028'])
+        self.year_combo.addItems(['2022', '2023', '2024', '2025', '2026', '2027', '2028', '2029', '2030'])
         self.year_combo.setCurrentText('2026')
         year_layout.addWidget(self.year_combo)
         year_layout.addStretch()
@@ -189,10 +194,11 @@ class ScrapeTab(QWidget):
         self.enable_start_scraping()
     
     def enable_start_scraping(self):
-        print(self.data_store.has_members_data())
         if not self.data_store.has_members_data():
+            self.file_status.setText("Members data has not been uploaded yet. Go to the '🦭 Upload Members Data' tab before proceeding.")
             self.scrape_btn.setEnabled(False)
         else:
+            self.file_status.setText("")
             self.scrape_btn.setEnabled(True)
     
     def start_scraping(self):
@@ -284,12 +290,17 @@ class ScrapeTab(QWidget):
         if not self.data_store.has_results_data():
             return
         
+        today = datetime.now().strftime("%d-%m-%Y")
         file_path, _ = QFileDialog.getSaveFileName(
-            self, "Save Results", "E1000-results.xlsx", "Excel Files (*.xlsx)")
+            self, "Save Results", f"E1000-results-{today}.xlsx", "Excel Files (*.xlsx)")
+    
         
         if file_path:
             try:
-                self.data_store.results_df.to_excel(file_path, index=False)
+                df = self.data_store.results_df.copy()
+                # Making points numeric so it is easier to add points in excel
+                df["Point"] = pd.to_numeric(df["Point"], errors="coerce")
+                df.to_excel(file_path, index=False)
                 QMessageBox.information(self, "Success", "Results saved successfully!")
             except Exception as e:
                 QMessageBox.critical(self, "Error", f"Failed to save: {str(e)}")

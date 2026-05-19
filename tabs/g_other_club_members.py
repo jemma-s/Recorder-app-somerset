@@ -40,8 +40,10 @@ class Other_Club_Members(QWidget):
         layout.addWidget(title)
         
         # Instructions
-        info = QLabel("This will find a list of swimmers who have logged a swim on the MSWA website (https://portal.msarc.org.au/results/results.php?js=on)")
+        
+        info = QLabel('This will find a list of swimmers who have logged a swim on the <a href=\"https://e1000.msarc.org.au/results/results.php">MSA website</a>')
         info.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        info.setOpenExternalLinks(True)
         layout.addWidget(info)
 
         info2 = QLabel("Note: the MSWA website results doesn't update instantly. This means the list of swimmers should just be used as a guide")
@@ -54,6 +56,7 @@ class Other_Club_Members(QWidget):
         self.year_combo = QComboBox()
         self.year_combo.addItems(['2025', '2026', 'Other'])
         self.year_combo.setCurrentText('2026')
+        self.year_combo.currentIndexChanged.connect(self.reset_for_new_year)
         year_layout.addWidget(self.year_combo)
         year_layout.addStretch()
         layout.addLayout(year_layout)
@@ -65,12 +68,18 @@ class Other_Club_Members(QWidget):
         layout.addWidget(self.load_meets_btn)
         layout.addStretch()
 
+        # Adding a loading icon thing
+        self.load_status = QLabel("")
+        self.load_status.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(self.load_status)
+
         # Drop down club select
         self.club_select_info = QLabel("Select a club that you want to find the swimmers of")
-        self.club_select_info_2 = QLabel("You can find a PDF list of clubs and codes HERE: https://mastersswimming.org.au/about/states-territory-and-affiliated-clubs/")
+        self.club_select_info_2 = QLabel('You can find a PDF list of clubs and codes <a href=\"https://mastersswimming.org.au/about/states-territory-and-affiliated-clubs/">here.</a>')
         self.club_select_info.setVisible(False) # Becomes visible after the swimmers have been loaded in and year selected
         layout.addWidget(self.club_select_info)
         self.club_select_info_2.setVisible(False) # Becomes visible after the swimmers have been loaded in and year selected
+        self.club_select_info_2.setOpenExternalLinks(True)
         layout.addWidget(self.club_select_info_2)
 
         self.club_select = QComboBox()
@@ -91,16 +100,18 @@ class Other_Club_Members(QWidget):
      
 # 2025 Endurance log - https://portal.msarc.org.au/meets/index.php?EventId=154331&filter=*&split=no&scope=&js=on
 # 2026 Endurance log - https://portal.msarc.org.au/meets/index.php?EventId=154524&filter=*&split=no&scope=&js=on
-#   
+    def reset_for_new_year(self):
+        self.load_meets_btn.setEnabled(True)
 
     def load_meets(self):
         # This is actioned after the button is clicked to find swimmers
         self.load_meets_btn.setEnabled(False)
+        self.load_status.setText("⏳ Loading swimmers, please wait...")
 
         # Linking the year selected to the url needed
         year = self.year_combo.currentText()
         if year == "2025":
-            url = "https://portal.msarc.org.au/meets/index.php?EventId=154331&filter=*&split=no&scope=&js=on"
+            url = "https://portal.msarc.org.au/meets/index.php?EventId=154331"
         elif year == "2026":
             #url = "https://portal.msarc.org.au/meets/index.php?EventId=154524&filter=*&split=no&scope=&js=on"
             url = "https://portal.msarc.org.au/meets/index.php?EventId=154524"
@@ -130,17 +141,24 @@ class Other_Club_Members(QWidget):
 
         # Finding list of unique clubs for drop down
         unique_clubs = sorted(df['Club'].unique())
+        # Adding an arbitrary line
+        self.club_select.addItem("Select a club")   
         self.club_select.addItems(unique_clubs)
         self.club_select.setVisible(True)
 
         self.club_select_info.setVisible(True) # Becomes visible after the swimmers have been loaded in and year selected
         self.club_select_info_2.setVisible(True) # Becomes visible after the swimmers have been loaded in and year selected
+        self.load_status.setText("")
     
 
     
     
     def display_swimmers_table(self, df):
         """Display members data in table once a year and club is selected"""
+        selected_club = self.club_select.currentText()
+        if selected_club == "Select a club":
+            self.swimmers_table.setVisible(False)
+            return
         df = self.club_members
         selected_club = self.club_select.currentText()
         df__selected = df[df['Club'] == selected_club]

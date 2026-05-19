@@ -127,12 +127,10 @@ class E1000App(QMainWindow):
     
     def on_tab_changed(self, index):
         """Handle tab changes - update tabs that need refreshing"""
-        if index == 1:  # Report tab
+        if index == 2:  # Birthday tab
             self.birthday_tab.refresh_data()
-        elif index == 2:  # Birthday tab
+        elif index == 3:  # Get E1000 Data tab
             self.scrape_tab.refresh_data()
-        elif index == 6:  # Get results - for other clubs
-            self.scrape_other_members_tab.refresh_data()
         elif index == 7:  # Get results - for other clubs
             self.scrape_other_members_tab.refresh_data()
 

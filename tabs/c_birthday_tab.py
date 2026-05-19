@@ -13,7 +13,7 @@ from datetime import datetime
 
 
 class BirthdayTab(QWidget):
-    """Tab for viewing swimmer birthdays organized by month"""
+    """Tab for viewing swimmer birthdays by month"""
     
     def __init__(self, data_store):
         super().__init__()
@@ -31,15 +31,20 @@ class BirthdayTab(QWidget):
         layout.addWidget(title)
         
         # Instructions
-        info = QLabel("View which swimmers have birthdays in each month")
+        info = QLabel("The birthdays of the current Somerset Masters members")
         info.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(info)
+
+        info2 = QLabel("Note: This only includes members who are signed up through SwimCentral. It does not include the birthdays of social or life members.")
+        info2.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(info2)
         
         # Month selector
         filter_layout = QHBoxLayout()
         filter_layout.addWidget(QLabel("Select Month:"))
         self.month_combo = QComboBox()
-        self.month_combo.addItem("All Months", None)
+        # Setting the default option to 'All months'
+        self.month_combo.addItem("All months", None)
         for i in range(1, 13):
             self.month_combo.addItem(calendar.month_name[i], i)
         self.month_combo.currentIndexChanged.connect(self.update_birthdays)
@@ -53,7 +58,7 @@ class BirthdayTab(QWidget):
         self.status_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(self.status_label)
         
-        # Summary statistics
+        # Summary statistics - returns the number of birthdays in each month
         self.summary_label = QLabel("")
         self.summary_label.setStyleSheet("font-size: 12px; color: #666; margin: 10px;")
         self.summary_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -67,17 +72,12 @@ class BirthdayTab(QWidget):
         
         # Initial message
         self.update_birthdays()
-    
-    #def refresh_data(self):
-    #    """Refresh the birthday display when tab is shown"""
-    #    self.update_birthdays()
 
     def refresh_data(self):
         self.update_birthdays()
     
     def update_birthdays(self):
         """Update the birthday table based on selected month"""
-        #print(self.data_store.get_members_data())
         if not self.data_store.has_members_data():
             self.show_no_data_message()
             return
@@ -108,16 +108,12 @@ class BirthdayTab(QWidget):
                 self.birthday_table.setRowCount(0)
                 return
             
-            #today = date.today()
-            
             df['Birth_Month'] = df['DOB_parsed'].dt.month
             df['Birth_Day'] = df['DOB_parsed'].dt.day
             df['Birth_Date'] = df['DOB_parsed'].dt.strftime('%d/%m/%Y')
             df['Birth_Year'] = df['DOB_parsed'].dt.year
             df['Age'] = df['DOB_parsed'].apply(calculate_age)
-            #print(df)
 
-            
             # Get selected month
             selected_month = self.month_combo.currentData()
             
@@ -128,11 +124,9 @@ class BirthdayTab(QWidget):
                 month_name = calendar.month_name[selected_month]
             else:
                 df_filtered = df.sort_values(['Birth_Month', 'Birth_Day'])
-                month_name = "All Months"
+                month_name = "All months"
             
             # Prepare table data
-            #if 'First name' in df_filtered.columns and 'Surname' in df_filtered.columns:
-            #df_filtered['Full Name'] = df_filtered['First name'] + ' ' + df_filtered['Surname']
             display_cols = ['Full name', 'Birth_Day', 'Birth_Date', 'Age']
 
             
@@ -143,16 +137,6 @@ class BirthdayTab(QWidget):
             
             # Rename columns for display
             column_names = ["MSWA number", "Name", "Day", "Birthday", "Current age"]
-            #column_names = []
-            #for col in display_df.columns:
-            #    if col == 'Birth_Day':
-            #        column_names.append('Day')
-            #    #elif col == 'Birth_Month_Name':
-            #    #    column_names.append('Month')
-            #    elif col == 'Full Name':
-            ##        column_names.append('Name')
-            #    else:
-            #        column_names.append(col)
             
             display_df.columns = column_names
             
@@ -187,8 +171,8 @@ class BirthdayTab(QWidget):
             for j, col in enumerate(df.columns):
                 item = QTableWidgetItem(str(df.iloc[i, j]))
                 
-                # Center align MSWA number, Day
-                if col in ['MSWA number', 'Day']:
+                # Center align MSWA number, Day and Current age
+                if col in ['MSWA number', 'Day', 'Current age']:
                     item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
                 
                 self.birthday_table.setItem(i, j, item)
@@ -202,7 +186,7 @@ class BirthdayTab(QWidget):
     
     def show_no_data_message(self):
         """Show message when no data is available"""
-        self.status_label.setText("⚠️ No member data loaded. Please upload members file in the 'Upload Members Data' tab first. \nAlready loaded in member data❓ Try selecting a month")
+        self.status_label.setText("⚠️ No member data loaded. Please upload members file in the '🦭 Upload Members Data' tab first. \nAlready loaded in member data❓ Try selecting a month")
         #self.status_label.setText(" /n")
         self.status_label.setStyleSheet("color: orange; font-weight: bold; font-size: 14px;")
         self.summary_label.setText("")
@@ -211,6 +195,6 @@ class BirthdayTab(QWidget):
 
 
 def calculate_age(born):
-    born = born.date()  # pd.Timestamp → date
+    born = born.date()  
     today = date.today()
     return today.year - born.year - ((today.month, today.day) < (born.month, born.day))
