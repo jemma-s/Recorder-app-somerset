@@ -1,11 +1,6 @@
 """
-TAB ?
+TAB 7
 Tab for finding swimmers from other clubs who have competed in endurance swims this year
-"""
-
-"""
-TAB 6
-Tab for downloading swim meet results
 """
 
 # 2025 Endurance log - https://portal.msarc.org.au/meets/index.php?EventId=154331&filter=*&split=no&scope=&js=on

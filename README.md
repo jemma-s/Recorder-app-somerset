@@ -156,3 +156,9 @@ Each tab has its own styling in button style methods (search for `setStyleSheet`
 ## 📞 Support
 
 For issues or questions, contact your Somerset Masters Swimming administrator.
+
+
+Future improvements
+- A consistent style sheet - potentially creating a file with all formatting of buttons, errors etc. 
+- Additional error messaging
+- Year on year comparison for visualisation

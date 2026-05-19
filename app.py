@@ -10,6 +10,7 @@ from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QPixmap
 
 # Import tab modules
+from tabs.a_home_tab import HomeTab
 from tabs.b_upload_tab import UploadTab
 from tabs.d_scrape_tab import ScrapeTab
 from tabs.e_visualize_tab import VisualizeTab
@@ -63,6 +64,7 @@ class E1000App(QMainWindow):
         self.tabs = QTabWidget()
         
         # Create tab instances (passing data_store to each)
+        self.home_tab = HomeTab(self.data_store)
         self.upload_tab = UploadTab(self.data_store)
         self.scrape_tab = ScrapeTab(self.data_store)
         self.visualize_tab = VisualizeTab(self.data_store)
@@ -72,6 +74,7 @@ class E1000App(QMainWindow):
         self.scrape_other_members_tab = ScrapeTabOtherClubSelected(self.data_store)
         
         # Add tabs to widget
+        self.tabs.addTab(self.home_tab, "🏠 Home")
         self.tabs.addTab(self.upload_tab, "🦭 Upload Members Data")
         self.tabs.addTab(self.birthday_tab, "🎂 Birthday Calendar")
         self.tabs.addTab(self.scrape_tab, "📥 Get E1000 Data")

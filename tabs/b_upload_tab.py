@@ -1,5 +1,5 @@
 """
-TAB 1
+TAB 2
 Tab for uploading member data into the app
 """
 import pandas as pd

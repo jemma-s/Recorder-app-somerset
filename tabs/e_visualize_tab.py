@@ -1,4 +1,5 @@
 """
+TAB 5
 Tab for uploading and visualizing E1000 data
 Save as: tabs/visualize_tab.py
 """
