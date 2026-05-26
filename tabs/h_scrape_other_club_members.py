@@ -12,6 +12,7 @@ from PyQt6.QtCore import QThread, pyqtSignal, Qt
 # Import scraper functions
 from EM1000_functions import setup_driver, input_swimmer_search, extract_swimmer_data
 import time
+from datetime import datetime
 
 
 class ScraperThreadOtherClubSelected(QThread):
@@ -128,10 +129,13 @@ class ScrapeTabOtherClubSelected(QWidget):
         layout.addWidget(title)
         
         # Instructions
-        info = QLabel("This gets endurance results directly from the MSA website (https://e1000.msarc.org.au/results/results.php)")
+        info = QLabel('This gets endurance results directly from the <a href=\"https://e1000.msarc.org.au/results/results.php">MSA website</a>')
         info.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(info)
         
+        # Validation text
+        self.file_status = QLabel("")
+        layout.addWidget(self.file_status)
         # Year selection
         year_layout = QHBoxLayout()
         year_layout.addWidget(QLabel("Select a year:"))
@@ -202,8 +206,10 @@ class ScrapeTabOtherClubSelected(QWidget):
     
     def enable_start_scraping(self):
         if not self.data_store.has_results_selected_members_other_club_df():
+            self.file_status.setText("The other club hasn't been selected. Go to the '🪼 Find members - for other clubs' tab before proceeding.")
             self.scrape_btn.setEnabled(False)
         else:
+            self.file_status.setText("")
             self.scrape_btn.setEnabled(True)
     
     def start_scraping(self):
@@ -295,12 +301,17 @@ class ScrapeTabOtherClubSelected(QWidget):
         if not self.data_store.has_results_other_club_data():
             return
         
+        today = datetime.now().strftime("%d-%m-%Y")
         file_path, _ = QFileDialog.getSaveFileName(
-            self, "Save Results", "E1000-results.xlsx", "Excel Files (*.xlsx)")
+            self, "Save Results", f"E1000-results-{self.data_store.get_selected_club()}-{today}.xlsx", "Excel Files (*.xlsx)")
+    
         
         if file_path:
             try:
-                self.data_store.results_other_club_df.to_excel(file_path, index=False)
+                df = self.data_store.results_other_club_df.copy()
+                # Making points numeric so it is easier to add points in excel
+                df["Point"] = pd.to_numeric(df["Point"], errors="coerce")
+                df.to_excel(file_path, index=False)
                 QMessageBox.information(self, "Success", "Results saved successfully!")
             except Exception as e:
                 QMessageBox.critical(self, "Error", f"Failed to save: {str(e)}")

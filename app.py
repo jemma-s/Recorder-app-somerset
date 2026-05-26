@@ -78,7 +78,7 @@ class E1000App(QMainWindow):
         self.tabs.addTab(self.upload_tab, "🦭 Upload Members Data")
         self.tabs.addTab(self.birthday_tab, "🎂 Birthday Calendar")
         self.tabs.addTab(self.scrape_tab, "📥 Get E1000 Data")
-        self.tabs.addTab(self.visualize_tab, "📊 Visualize E1000 Data")
+        self.tabs.addTab(self.visualize_tab, "📊 Visualise E1000 Data")
         self.tabs.addTab(self.meets_tab, "🏎️ Get Swim Meets Results")
         self.tabs.addTab(self.other_club_members_tab, "🪼 Find members - for other clubs")
         self.tabs.addTab(self.scrape_other_members_tab, "🎣 Get E1000 results - for other clubs")

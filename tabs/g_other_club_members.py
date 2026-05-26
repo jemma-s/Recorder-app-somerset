@@ -14,10 +14,36 @@ import calendar
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel, 
                              QComboBox, QTableWidget, QTableWidgetItem, 
                              QHeaderView, QPushButton, QFileDialog,QMessageBox)
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QTimer, QThread, pyqtSignal
 from datetime import date
 from datetime import datetime
-from Pool_meets_functions import *
+import requests
+from bs4 import BeautifulSoup
+#from Pool_meets_functions import *
+
+
+class LoadMeetsWorker(QThread):
+    finished = pyqtSignal(object)  # emits the dataframe when done
+
+    def __init__(self, url):
+        super().__init__()
+        self.url = url
+
+    def run(self):
+        data = requests.get(self.url).text
+        soup = BeautifulSoup(data, 'html.parser')
+        rows = []
+        for tr in soup.find_all("tr"):
+            cells = tr.find_all("td", class_="result")
+            if len(cells) > 4:
+                name = cells[1].get_text(strip=True)
+                age  = cells[2].get_text(strip=True)
+                club = cells[3].get_text(strip=True)
+                id_  = cells[4].get_text(strip=True)
+                rows.append({"Name": name, "Age": age, "Club": club, "ID": id_})
+        df = pd.DataFrame.from_dict(rows)
+        df = df.drop_duplicates()
+        self.finished.emit(df)
 
 
 class Other_Club_Members(QWidget):
@@ -28,6 +54,11 @@ class Other_Club_Members(QWidget):
         self.data_store = data_store
         self.init_ui()
         self.club_members = None
+
+        self.spinner_timer = QTimer()
+        self.spinner_timer.timeout.connect(self._update_spinner)
+        self._spinner_frames = ['⠋','⠙','⠹','⠸','⠼','⠴','⠦','⠧','⠇','⠏']
+        self._spinner_index = 0
     
     def init_ui(self):
         """Initialize the UI"""
@@ -41,12 +72,12 @@ class Other_Club_Members(QWidget):
         
         # Instructions
         
-        info = QLabel('This will find a list of swimmers who have logged a swim on the <a href=\"https://e1000.msarc.org.au/results/results.php">MSA website</a>')
+        info = QLabel('This will find a list of swimmers who have logged a swim on the <a href=\"https://e1000.msarc.org.au/results/results.php">MSA website.</a>')
         info.setAlignment(Qt.AlignmentFlag.AlignCenter)
         info.setOpenExternalLinks(True)
         layout.addWidget(info)
 
-        info2 = QLabel("Note: the MSWA website results doesn't update instantly. This means the list of swimmers should just be used as a guide")
+        info2 = QLabel("Note: the MSWA website results doesn't update instantly. This means the list of swimmers should just be used as a guide.")
         info2.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(info2)
         
@@ -66,7 +97,7 @@ class Other_Club_Members(QWidget):
         self.load_meets_btn.clicked.connect(self.load_meets)
         #self.load_meets_btn.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(self.load_meets_btn)
-        layout.addStretch()
+
 
         # Adding a loading icon thing
         self.load_status = QLabel("")
@@ -74,8 +105,9 @@ class Other_Club_Members(QWidget):
         layout.addWidget(self.load_status)
 
         # Drop down club select
-        self.club_select_info = QLabel("Select a club that you want to find the swimmers of")
-        self.club_select_info_2 = QLabel('You can find a PDF list of clubs and codes <a href=\"https://mastersswimming.org.au/about/states-territory-and-affiliated-clubs/">here.</a>')
+        self.club_select_info = QLabel("Select a swimming club")
+        self.club_select_info.setStyleSheet("font-size: 18px; font-weight: bold")
+        self.club_select_info_2 = QLabel('Not sure what the club code is? You can find a list of clubs and codes <a href=\"https://mastersswimming.org.au/about/states-territory-and-affiliated-clubs/">here.</a>')
         self.club_select_info.setVisible(False) # Becomes visible after the swimmers have been loaded in and year selected
         layout.addWidget(self.club_select_info)
         self.club_select_info_2.setVisible(False) # Becomes visible after the swimmers have been loaded in and year selected
@@ -87,17 +119,31 @@ class Other_Club_Members(QWidget):
         self.club_select.currentIndexChanged.connect(self.display_swimmers_table)
         layout.addWidget(self.club_select)
         layout.addSpacing(50)
+        layout.addStretch()
         
+        # Line before swimmers table
+        self.club_select_title = QLabel()
+        self.club_select_title.setVisible(False) # Becomes visible after the swimmers have been loaded in and year selected
+        layout.addWidget(self.club_select_title)
         # Swimmers table
         self.swimmers_table = QTableWidget()
         self.swimmers_table.setVisible(False)
         layout.addWidget(self.swimmers_table)
         #layout.addSpacing(50)
 
+        # Line to prompt users to go to the other tab
+        self.tab_prompt = QLabel()
+        self.tab_prompt.setVisible(False)
+        layout.addWidget(self.tab_prompt)
+        layout.addStretch()
 
 
+    def _update_spinner(self):
+        frame = self._spinner_frames[self._spinner_index % len(self._spinner_frames)]
+        self.load_status.setText(f"{frame} Loading swimmers, please wait...")
+        self._spinner_index += 1
 
-     
+
 # 2025 Endurance log - https://portal.msarc.org.au/meets/index.php?EventId=154331&filter=*&split=no&scope=&js=on
 # 2026 Endurance log - https://portal.msarc.org.au/meets/index.php?EventId=154524&filter=*&split=no&scope=&js=on
     def reset_for_new_year(self):
@@ -106,7 +152,8 @@ class Other_Club_Members(QWidget):
     def load_meets(self):
         # This is actioned after the button is clicked to find swimmers
         self.load_meets_btn.setEnabled(False)
-        self.load_status.setText("⏳ Loading swimmers, please wait...")
+        self._spinner_index = 0
+        self.spinner_timer.start(100)
 
         # Linking the year selected to the url needed
         year = self.year_combo.currentText()
@@ -119,23 +166,14 @@ class Other_Club_Members(QWidget):
             # This will need to be improved: either the user can copy and paste the URL in or....?
             url = "TBA"
 
-        data = requests.get(url).text
-        soup = BeautifulSoup(data, 'html.parser') #Getting the HTML
-        #print(soup)
-        rows = []
+        self.worker = LoadMeetsWorker(url)
+        self.worker.finished.connect(self._on_meets_loaded)
+        self.worker.start()
 
-        for tr in soup.find_all("tr"):
-            cells = tr.find_all("td", class_="result")
-            if len(cells) >4: # Will stop the loop if it's an empty list
-                name = cells[1].get_text(strip=True)
-                age  = cells[2].get_text(strip=True)
-                club = cells[3].get_text(strip=True)
-                id_  = cells[4].get_text(strip=True)
-                rows.append({"Name": name, "Age": age, "Club": club, "ID": id_})
+    def _on_meets_loaded(self, df):
+        self.spinner_timer.stop()
+        self.load_status.setText("")
 
-        df = pd.DataFrame.from_dict(rows)
-        df = df.drop_duplicates() #removing duplicates as we only need single instances
-        #print(df)
         self.club_members = df #Storing the df for later use
         self.data_store.set_results_selected_members_other_club_df(df)
 
@@ -148,8 +186,6 @@ class Other_Club_Members(QWidget):
 
         self.club_select_info.setVisible(True) # Becomes visible after the swimmers have been loaded in and year selected
         self.club_select_info_2.setVisible(True) # Becomes visible after the swimmers have been loaded in and year selected
-        self.load_status.setText("")
-    
 
     
     
@@ -163,6 +199,10 @@ class Other_Club_Members(QWidget):
         selected_club = self.club_select.currentText()
         df__selected = df[df['Club'] == selected_club]
         self.data_store.set_selected_club(selected_club)
+
+        self.club_select_title.setVisible(True)
+        self.club_select_title.setText(f'Swimmers from {selected_club} in {self.year_combo.currentText()}')
+
         self.swimmers_table.setVisible(True)
         self.swimmers_table.setRowCount(len(df__selected))
         self.swimmers_table.setColumnCount(len(df__selected.columns))
@@ -176,13 +216,6 @@ class Other_Club_Members(QWidget):
         self.swimmers_table.resizeColumnsToContents()
         header = self.swimmers_table.horizontalHeader()
         header.setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
-        
 
-        
-
-
-
-  
-
-
-    
+        self.tab_prompt.setVisible(True)
+        self.tab_prompt.setText(f"Members from {selected_club} have now been loaded! Now, go to the '🎣 Get E1000 results - for other clubs' tab.")
