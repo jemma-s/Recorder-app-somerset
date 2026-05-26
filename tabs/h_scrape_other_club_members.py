@@ -130,6 +130,7 @@ class ScrapeTabOtherClubSelected(QWidget):
         
         # Instructions
         info = QLabel('This gets endurance results directly from the <a href=\"https://e1000.msarc.org.au/results/results.php">MSA website</a>')
+        info.setOpenExternalLinks(True)
         info.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(info)
         

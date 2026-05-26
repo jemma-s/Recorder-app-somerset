@@ -257,15 +257,15 @@ def all_swimmers_results(df, year, MSWA_id = "MSWA number", firstname = "First n
     # This will return a large df with all swimming results for the year
     # The optional items are in case the column names of the df change
 
-    all_results = pd.DataFrame()
+    all_results = []
 
     for i, row in df.iterrows():
         MSWA_number = row["MSWA number"]
         first_name = row["First name"]
         last_name = row["Surname"]
         individual_results = individual_swimmers_results(MSWA_number, year, first_name, last_name)
-        all_results = pd.concat([all_results, individual_results])
-    return all_results
+        all_results.append(individual_results)
+    return pd.concat(all_results, ignore_index = True)
 
 def all_swimmers_results_grouped_points(df, year):
     # This will find all results for the year and will sum it on a per swimmer basis

@@ -7,7 +7,7 @@ import sys
 import pandas as pd
 from PyQt6.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QTabWidget, QScrollArea
 from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QPixmap
+from PyQt6.QtGui import QPixmap, QIcon
 
 # Import tab modules
 from tabs.a_home_tab import HomeTab
@@ -21,6 +21,7 @@ from tabs.h_scrape_other_club_members import ScrapeTabOtherClubSelected
 
 # Import shared data store
 from shared_data import DataStore
+from theme import apply_theme
 
 
 class E1000App(QMainWindow):
@@ -75,13 +76,13 @@ class E1000App(QMainWindow):
         
         # Add tabs to widget
         self.tabs.addTab(self.home_tab, "🏠 Home")
-        self.tabs.addTab(self.upload_tab, "🦭 Upload Members Data")
-        self.tabs.addTab(self.birthday_tab, "🎂 Birthday Calendar")
-        self.tabs.addTab(self.scrape_tab, "📥 Get E1000 Data")
-        self.tabs.addTab(self.visualize_tab, "📊 Visualise E1000 Data")
-        self.tabs.addTab(self.meets_tab, "🏎️ Get Swim Meets Results")
-        self.tabs.addTab(self.other_club_members_tab, "🪼 Find members - for other clubs")
-        self.tabs.addTab(self.scrape_other_members_tab, "🎣 Get E1000 results - for other clubs")
+        self.tabs.addTab(self.upload_tab, "🦭 Upload Members")
+        self.tabs.addTab(self.birthday_tab, "🎂 Birthdays")
+        self.tabs.addTab(self.scrape_tab, "📥 E1000 Results")
+        self.tabs.addTab(self.visualize_tab, "📊 Visualise E1000")
+        self.tabs.addTab(self.meets_tab, "🏎️ Swim Meets Results")
+        self.tabs.addTab(self.other_club_members_tab, "🪼 Other club members")
+        self.tabs.addTab(self.scrape_other_members_tab, "🎣 Other club E1000 Results")
 
         
         # Connect tab change signal to update tabs
@@ -131,12 +132,17 @@ class E1000App(QMainWindow):
             self.birthday_tab.refresh_data()
         elif index == 3:  # Get E1000 Data tab
             self.scrape_tab.refresh_data()
+        elif index == 5:  # Get swim meets results tab
+            self.meets_tab.refresh_data()
         elif index == 7:  # Get results - for other clubs
             self.scrape_other_members_tab.refresh_data()
 
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
+    # Setting the window icon as the Somerset logo
+    app.setWindowIcon(QIcon("assets/somerset_logo.jpg"))
+    apply_theme(app)
     window = E1000App()
     window.show()
     sys.exit(app.exec())

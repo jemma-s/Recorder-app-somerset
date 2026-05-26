@@ -126,7 +126,7 @@ class UploadTab(QWidget):
                 
                 self.file_status.setText(f"✓ Loaded {len(df)} active members from {file_path.split('/')[-1]}")
                 self.file_status.setStyleSheet("color: green; font-weight: bold;")
-                self.user_status.setText("Somerset members has now been loaded! Now, either go to the '🎂 Birthday Calendar' tab or the '📥 Get E1000 Data' tab.")
+                self.user_status.setText("Somerset members has now been loaded! Now, either go to the '🎂 Birthdays' tab or the '📥 E1000 Results' tab or the '🏎️ Swim Meets Results' tab.")
                 
             except Exception as e:
                 QMessageBox.critical(self, "Error", f"Failed to load file: {str(e)}\n\nError when creating table")

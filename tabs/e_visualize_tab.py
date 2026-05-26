@@ -41,7 +41,7 @@ class VisualizeTab(QWidget):
         info1.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(info1)
 
-        info2 = QLabel("Upload the results excel file from 'Get current E1000 data'.")
+        info2 = QLabel("Upload the results excel file from '📥 E1000 Results'.")
         info2.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(info2)
 

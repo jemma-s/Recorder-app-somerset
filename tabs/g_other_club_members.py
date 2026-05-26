@@ -73,6 +73,7 @@ class Other_Club_Members(QWidget):
         # Instructions
         
         info = QLabel('This will find a list of swimmers who have logged a swim on the <a href=\"https://e1000.msarc.org.au/results/results.php">MSA website.</a>')
+        info.setOpenExternalLinks(True)
         info.setAlignment(Qt.AlignmentFlag.AlignCenter)
         info.setOpenExternalLinks(True)
         layout.addWidget(info)
@@ -107,6 +108,7 @@ class Other_Club_Members(QWidget):
         # Drop down club select
         self.club_select_info = QLabel("Select a swimming club")
         self.club_select_info.setStyleSheet("font-size: 18px; font-weight: bold")
+        self.club_select_info.setOpenExternalLinks(True)
         self.club_select_info_2 = QLabel('Not sure what the club code is? You can find a list of clubs and codes <a href=\"https://mastersswimming.org.au/about/states-territory-and-affiliated-clubs/">here.</a>')
         self.club_select_info.setVisible(False) # Becomes visible after the swimmers have been loaded in and year selected
         layout.addWidget(self.club_select_info)
@@ -119,7 +121,7 @@ class Other_Club_Members(QWidget):
         self.club_select.currentIndexChanged.connect(self.display_swimmers_table)
         layout.addWidget(self.club_select)
         layout.addSpacing(50)
-        layout.addStretch()
+        #layout.addStretch()
         
         # Line before swimmers table
         self.club_select_title = QLabel()
@@ -218,4 +220,4 @@ class Other_Club_Members(QWidget):
         header.setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
 
         self.tab_prompt.setVisible(True)
-        self.tab_prompt.setText(f"Members from {selected_club} have now been loaded! Now, go to the '🎣 Get E1000 results - for other clubs' tab.")
+        self.tab_prompt.setText(f"Members from {selected_club} have now been loaded! Now, go to the '🎣 Other Club E1000 Results' tab.")

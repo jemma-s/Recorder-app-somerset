@@ -34,23 +34,23 @@ class HomeTab(QWidget):
         info1.setAlignment(Qt.AlignmentFlag.AlignLeft)
         layout.addWidget(info1)
 
-        tabb = QLabel(f"<b>🦭 Upload Members Data</b> <br> Where you can upload an excel document with a list of current Somerset Members. This list is then used on other pages of the app. ")
+        tabb = QLabel(f"<b>🦭 Upload Members</b> <br> Where you can upload an excel document with a list of current Somerset Members. This list is then used on other pages of the app. ")
         tabb.setAlignment(Qt.AlignmentFlag.AlignLeft)
         layout.addWidget(tabb)
 
-        tabc = QLabel(f"<b>🎂 Birthday Calendar</b> <br> Uses the list of members uploaded in '🦭 Upload Members Data' and gives a list of birthdays for each month. This is used for producing the monthly newsletter.")
+        tabc = QLabel(f"<b>🎂 Birthdays</b> <br> Uses the list of members uploaded in '🦭 Upload Members' and gives a list of birthdays for each month. This is used for producing the monthly newsletter.")
         tabc.setAlignment(Qt.AlignmentFlag.AlignLeft)
         layout.addWidget(tabc)
 
-        tabd = QLabel(f"<b>📥 Get E1000 Data</b> <br> Uses the list of members uploaded in '🦭 Upload Members Data' and will find the current E1000 results on the MSA website. Creates an excel document with a list of each swim.")
+        tabd = QLabel(f"<b>📥 Get E1000 Data</b> <br> Uses the list of members uploaded in '🦭 Upload Members' and will find the current E1000 results on the MSA website. Creates an excel document with a list of each swim.")
         tabd.setAlignment(Qt.AlignmentFlag.AlignLeft)
         layout.addWidget(tabd)
 
-        tabe = QLabel(f"<b>📊 Visualise E1000 Data</b> <br> Requires you to upload the excel document saved after getting E1000 data from '📥 Get E1000 Data' or '🎣 Get E1000 results - for other clubs'. Gives a quick insight into the data.")
+        tabe = QLabel(f"<b>📊 Visualise E1000 Data</b> <br> Requires you to upload the excel document saved after getting E1000 data from '📥 E1000 Results' or '🎣 Other Club E1000 Results'. Gives a quick insight into the data.")
         tabe.setAlignment(Qt.AlignmentFlag.AlignLeft)
         layout.addWidget(tabe)
 
-        tabf = QLabel(f"<b>🏎️ Get Swim Meet Results</b> <br> ** NOT CURRENTLY WORKING")
+        tabf = QLabel(f"<b>🏎️ Get Swim Meet Results</b> <br> Uses the list of members uploaded in '🦭 Upload Members' to find swim meet results for the whole year or for a specific swimmer. ")
         tabf.setAlignment(Qt.AlignmentFlag.AlignLeft)
         layout.addWidget(tabf)
 
@@ -58,7 +58,7 @@ class HomeTab(QWidget):
         tabg.setAlignment(Qt.AlignmentFlag.AlignLeft)
         layout.addWidget(tabg)
 
-        tabh = QLabel(f"<b>🎣 Get E1000 results - for other clubs</b> <br> Uses the list of swimmers generated after using '🪼 Find members - for other clubs'. Will find the current E1000 results on the MSA website. Creates an excel document with a list of each swim.")
+        tabh = QLabel(f"<b>🎣 Get E1000 results - for other clubs</b> <br> Uses the list of swimmers generated after using '🪼 Other Club Members'. Will find the current E1000 results on the MSA website. Creates an excel document with a list of each swim.")
         tabh.setAlignment(Qt.AlignmentFlag.AlignLeft)
         layout.addWidget(tabh)
         

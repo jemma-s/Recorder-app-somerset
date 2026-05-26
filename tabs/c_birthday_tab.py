@@ -186,7 +186,7 @@ class BirthdayTab(QWidget):
     
     def show_no_data_message(self):
         """Show message when no data is available"""
-        self.status_label.setText("⚠️ No member data loaded. Please upload members file in the '🦭 Upload Members Data' tab first. \nAlready loaded in member data❓ Try selecting a month")
+        self.status_label.setText("⚠️ No member data loaded. Please upload members file in the '🦭 Upload Members' tab first. \nAlready loaded in member data❓ Try selecting a month")
         #self.status_label.setText(" /n")
         self.status_label.setStyleSheet("color: orange; font-weight: bold; font-size: 14px;")
         self.summary_label.setText("")

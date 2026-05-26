@@ -195,7 +195,7 @@ class ScrapeTab(QWidget):
     
     def enable_start_scraping(self):
         if not self.data_store.has_members_data():
-            self.file_status.setText("Members data has not been uploaded yet. Go to the '🦭 Upload Members Data' tab before proceeding.")
+            self.file_status.setText("Members data has not been uploaded yet. Go to the '🦭 Upload Members' tab before proceeding.")
             self.scrape_btn.setEnabled(False)
         else:
             self.file_status.setText("")

@@ -7,10 +7,27 @@ import calendar
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel, 
                              QComboBox, QTableWidget, QTableWidgetItem, 
                              QHeaderView, QPushButton, QFileDialog, QMessageBox)
-from PyQt6.QtCore import Qt, QTimer
+from PyQt6.QtCore import Qt, QTimer, QThread, pyqtSignal
 from datetime import date, datetime
 from Pool_meets_functions import *
 
+class ResultsWorker(QThread):
+    """A helper class so that the window won't freeze"""
+    finished = pyqtSignal(object)   # emits the resulting dataframe
+    error = pyqtSignal(str)         # emits an error message if something goes wrong
+
+    def __init__(self, search_fn, *args, **kwargs):
+        super().__init__()
+        self.search_fn = search_fn
+        self.args = args
+        self.kwargs = kwargs
+
+    def run(self):
+        try:
+            result = self.search_fn(*self.args, **self.kwargs)
+            self.finished.emit(result)
+        except Exception as e:
+            self.error.emit(str(e))
 
 class MeetsTab(QWidget):
     """Tab for downloading meet results"""
@@ -46,6 +63,10 @@ class MeetsTab(QWidget):
         self.status_label.setText(f"{frame}  {self._spinner_msg}")
         self.status_label.setStyleSheet("color: var(--color-text-secondary); font-size: 14px;")
         self._spinner_index += 1
+    
+    def refresh_data(self):
+        if not self.data_store.has_members_data():
+            self.show_no_data_message()
 
     def init_ui(self):
         """Initialize the UI"""
@@ -59,6 +80,7 @@ class MeetsTab(QWidget):
         
         # Instructions
         info = QLabel('This gets meet data directly from the <a href="https://portal.msarc.org.au/results/results.php?js=on">MSA website.</a>')
+        info.setOpenExternalLinks(True)
         info.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(info)
         
@@ -76,7 +98,7 @@ class MeetsTab(QWidget):
         self.load_meets_btn = QPushButton("🏊‍♀️ Load the swim meets for the year selected")
         self.load_meets_btn.clicked.connect(self.load_meets)
         layout.addWidget(self.load_meets_btn)
-        layout.addStretch()
+        #layout.addStretch()
         
         # Status label (used for spinner + warnings)
         self.status_label = QLabel("")
@@ -88,22 +110,22 @@ class MeetsTab(QWidget):
         self.meets_table.setVisible(False)
         layout.addWidget(self.meets_table)
 
-        self.meets_swimmer_combobox_helper = QLabel("Choose what results you want to find")
+        self.meets_swimmer_combobox_helper = QLabel("Choose what results you want to find:")
         self.meets_swimmer_combobox_helper.setVisible(False)
         layout.addWidget(self.meets_swimmer_combobox_helper)
-        self.combobox_helper_1 = QLabel("<b>Results of a certain meet</b><br>Creates a list of all Somerset results obtained at the swim meet selected")
+        self.combobox_helper_1 = QLabel("<b>Results of a certain meet</b><br>Creates a list of all Somerset results obtained at the swim meet selected.")
         self.combobox_helper_1.setAlignment(Qt.AlignmentFlag.AlignLeft)
         self.combobox_helper_1.setVisible(False)
         layout.addWidget(self.combobox_helper_1)
-        self.combobox_helper_2 = QLabel("<b>Results of a certain swimmer for the year</b><br>TO FILL IN")
+        self.combobox_helper_2 = QLabel("<b>Results of a certain swimmer for the year</b><br>Creates a list of all results obtained by the selected Somerset swimmer.")
         self.combobox_helper_2.setAlignment(Qt.AlignmentFlag.AlignLeft)
         self.combobox_helper_2.setVisible(False)
         layout.addWidget(self.combobox_helper_2)
-        self.combobox_helper_3 = QLabel("<b>All results in the year</b><br>TO FILL IN")
+        self.combobox_helper_3 = QLabel("<b>All results in the year</b><br>Creates a list of all Somerset results at every swim meet in the year. ")
         self.combobox_helper_3.setAlignment(Qt.AlignmentFlag.AlignLeft)
         self.combobox_helper_3.setVisible(False)
         layout.addWidget(self.combobox_helper_3)
-        self.combobox_helper_4 = QLabel("<b>Combined year results - For awards</b><br>TO FILL IN")
+        self.combobox_helper_4 = QLabel("<b>Combined year results - For awards</b><br>Finds the total amount of world athletic points obtained by each Somerset swimmer. Points are not awarded for 25m or endurance events. ")
         self.combobox_helper_4.setAlignment(Qt.AlignmentFlag.AlignLeft)
         self.combobox_helper_4.setVisible(False)
         layout.addWidget(self.combobox_helper_4)
@@ -118,6 +140,10 @@ class MeetsTab(QWidget):
         self.results_combobox.currentTextChanged.connect(self.meets_swimmer_selector)
         self.results_combobox.setVisible(False)
         layout.addWidget(self.results_combobox)
+
+        self.status_label2 = QLabel("")
+        self.status_label2.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(self.status_label2)
 
         self.meets_swimmer_combobox = QComboBox()
         self.meets_swimmer_combobox.setVisible(False)
@@ -144,74 +170,62 @@ class MeetsTab(QWidget):
 
     def load_meets(self):
         self.load_meets_btn.setEnabled(False)
-        self._start_spinner("Loading swim meets…")
+        self._start_spinner("Loading swim meets, please wait...")
 
-        # Force the UI to repaint so the spinner appears before the blocking call
-        from PyQt6.QtWidgets import QApplication
-        QApplication.processEvents()
+        self._worker = ResultsWorker(meets_list_from_url, self.year_combo.currentText())
+        self._worker.finished.connect(self._on_meets_loaded)
+        self._worker.error.connect(self._on_load_error)
+        self._worker.start()
 
-        try:
-            year = self.year_combo.currentText()
-            df = meets_list_from_url(year)
-            del df['URL']
-            self.meets_store = df
-            self.results_combobox.setVisible(True)
-            self.meets_swimmer_combobox_helper.setVisible(True)
-            self.combobox_helper_1.setVisible(True)
-            self.combobox_helper_2.setVisible(True)
-            self.combobox_helper_3.setVisible(True)
-            self.combobox_helper_4.setVisible(True)
-        except Exception as e:
-            QMessageBox.critical(self, "Error", f"Failed to load meets: {str(e)}")
-        finally:
-            self._stop_spinner()
-            self.load_meets_btn.setEnabled(True)
+    def _on_meets_loaded(self, df):
+        del df['URL']
+        self.meets_store = df
+        self.results_combobox.setVisible(True)
+        self.meets_swimmer_combobox_helper.setVisible(True)
+        self.combobox_helper_1.setVisible(True)
+        self.combobox_helper_2.setVisible(True)
+        self.combobox_helper_3.setVisible(True)
+        self.combobox_helper_4.setVisible(True)
+        self._stop_spinner()
+        self.load_meets_btn.setEnabled(True)
 
     def load_results(self):
-        """Loading results for the selected meet/swimmer for the selected option"""
         self.load_results_btn.setEnabled(False)
-        self._start_spinner("Fetching results…")
+        self._start_spinner("Loading results…")
 
-        from PyQt6.QtWidgets import QApplication
-        QApplication.processEvents()
+        selected = self.results_combobox.currentText()
+        year = self.year_combo.currentText()
+        selected_swimmer = self.meets_swimmer_combobox.currentText()
+        memberslist = self.data_store.members_df.copy()
 
-        try:
-            selected_result_combobox = self.results_combobox.currentText()
-            selected_meets_swimmer_combobox = self.meets_swimmer_combobox.currentText()
-            year = self.year_combo.currentText()
-            df = None
+        if selected == "Results of a certain swimmer for the year":
+            MSWA_number = memberslist.loc[memberslist["Full name"] == selected_swimmer, "MSWA number"].item()
+            firstname = memberslist.loc[memberslist["Full name"] == selected_swimmer, "First name"].item()
+            surname = memberslist.loc[memberslist["Full name"] == selected_swimmer, "Surname"].item()
+            self._worker = ResultsWorker(individual_swimmers_results, MSWA_number, year, firstname, surname)
 
-            if selected_result_combobox == "Results of a certain swimmer for the year":
-                memberslist = self.data_store.members_df.copy()
-                MSWA_number = memberslist.loc[memberslist["Full name"] == selected_meets_swimmer_combobox, "MSWA number"].values.item()
-                firstname = memberslist.loc[memberslist["Full name"] == selected_meets_swimmer_combobox, "First name"].values.item()
-                surname = memberslist.loc[memberslist["Full name"] == selected_meets_swimmer_combobox, "Surname"].values.item()
-                df = individual_swimmers_results(MSWA_number, year, firstname, surname)
-                print(df)
+        elif selected == "All results in the year":
+            self._worker = ResultsWorker(all_swimmers_results, memberslist, year)
 
-            elif selected_result_combobox == "Results of a certain meet":
-                memberslist = self.data_store.members_df.copy()
-                # Add your meet-specific function call here
-                pass
+        elif selected == "Combined year results - For awards":
+            self._worker = ResultsWorker(all_swimmers_results_grouped_points, memberslist, year)
 
-            elif selected_result_combobox == "All results in the year":
-                memberslist = self.data_store.members_df.copy()
-                df = all_swimmers_results(memberslist, year)
+        self._worker.finished.connect(self._on_results_loaded)
+        self._worker.error.connect(self._on_load_error)
+        self._worker.start()
 
-            elif selected_result_combobox == "Combined year results - For awards":
-                memberslist = self.data_store.members_df.copy()
-                df = all_swimmers_results_grouped_points(memberslist, year)
+    def _on_results_loaded(self, df):
+        self.results_store = df
+        self.display_results_table(df)
+        self.download_btn.setVisible(True)
+        self._stop_spinner()
+        self.load_results_btn.setEnabled(True)
 
-            if df is not None:
-                self.results_store = df
-                self.display_results_table(df)
-                self.download_btn.setVisible(True)
-
-        except Exception as e:
-            QMessageBox.critical(self, "Error", f"Failed to load results: {str(e)}")
-        finally:
-            self._stop_spinner()
-            self.load_results_btn.setEnabled(True)
+    def _on_load_error(self, message):
+        QMessageBox.critical(self, "Error", f"Failed to load: {message}")
+        self._stop_spinner()
+        self.load_meets_btn.setEnabled(True)
+        self.load_results_btn.setEnabled(True)
 
     def display_meets_table(self, df):
         """Display members data in table"""
@@ -250,28 +264,31 @@ class MeetsTab(QWidget):
             memberslist = self.data_store.members_df["Full name"]
             self.meets_swimmer_combobox.addItems(memberslist.tolist())
             self.meets_swimmer_combobox.setVisible(True)
-            self.status_label.setText("Select a swimmer")
+            self.status_label2.setText("Select a swimmer")
         elif selected_result_combobox == "Results of a certain meet":
             meetslist = self.meets_store['Meet']
             self.meets_swimmer_combobox.addItems(meetslist.tolist())
             self.meets_swimmer_combobox.setVisible(True)
-            self.status_label.setText("Select a swim meet")
+            self.status_label2.setText("Select a swim meet")
         else:
             self.meets_swimmer_combobox.setVisible(False)
-            self.status_label.setText("")
+            self.status_label2.setText("")
 
     def show_no_data_message(self):
         """Show message when no data is available"""
         self.load_results_btn.setVisible(False)
-        self.status_label.setText("⚠️ No member data loaded. Please upload members file in the '🦭 Upload Members Data' tab first.")
+        self.status_label.setText("⚠️ No member data loaded. Please upload members file in the '🦭 Upload Members' tab first.")
         self.status_label.setStyleSheet("color: orange; font-weight: bold; font-size: 14px;")
 
     def download_results(self):
         """Download results to Excel"""
         if self.results_store is None:
             return
+        
+        today = datetime.now().strftime("%d-%m-%Y")
         file_path, _ = QFileDialog.getSaveFileName(
-            self, "Save Results", "Swim-meet-results.xlsx", "Excel Files (*.xlsx)")
+            self, "Save Results", f"Swim-meet-results-{today}.xlsx", "Excel Files (*.xlsx)")
+        
         if file_path:
             try:
                 self.results_store.to_excel(file_path, index=False)
