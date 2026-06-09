@@ -148,7 +148,7 @@ class MeetsTab(QWidget):
         self.meets_swimmer_combobox = QComboBox()
         self.meets_swimmer_combobox.setVisible(False)
         layout.addWidget(self.meets_swimmer_combobox)
-        layout.addStretch()
+        #layout.addStretch()
 
         self.load_results_btn = QPushButton("👆 Find the results")
         self.load_results_btn.clicked.connect(self.load_results)
