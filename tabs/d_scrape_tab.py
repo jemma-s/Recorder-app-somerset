@@ -10,7 +10,7 @@ from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
 from PyQt6.QtCore import QThread, pyqtSignal, Qt
 
 # Import scraper functions
-from EM1000_functions import setup_driver, input_swimmer_search, extract_swimmer_data
+from functions.EM1000_functions import setup_driver, input_swimmer_search, extract_swimmer_data
 import time
 from datetime import datetime
 

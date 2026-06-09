@@ -9,7 +9,7 @@ from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
                              QHeaderView, QPushButton, QFileDialog, QMessageBox)
 from PyQt6.QtCore import Qt, QTimer, QThread, pyqtSignal
 from datetime import date, datetime
-from Pool_meets_functions import *
+from functions.Pool_meets_functions import *
 
 class ResultsWorker(QThread):
     """A helper class so that the window won't freeze"""
