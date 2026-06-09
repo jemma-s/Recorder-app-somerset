@@ -72,7 +72,7 @@ How to use:
 * Click the desired club code.
 * A table of swimmers will be displayed to sense-check the results.
 * Click the 'Other club E1000 Results' tab.
-* * Select the desired year. It will default to 2026.
+* Select the desired year. It will default to 2026.
 * Click the button to start the web scraper.
 * A display will show up to show the progress of the scraper.
 * Once done, a pop-up will appear.
