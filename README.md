@@ -1,6 +1,6 @@
-# E1000 PyQt6 Application - Somerset Masters Swimming Club
+# E1000 Recorder App - Somerset Masters Swimming Club
 
-A desktop application built with PyQt6 to streamline the processes associated with the recorder of Somerset Masters Swimming E1000 endurance program data. 
+A desktop app built with PyQt6 to streamline the processes associated with being the recorder at Somerset Masters Swimming Club. The app allows the recorder to obtain real-time swim meet and endurance results. 
 
 ## Purpose
 To create a user-friendly interface for the user to web scrape frequently used data from the Masters Swimming Australia website. 
@@ -23,6 +23,9 @@ Swim meet results are sourced from the [Masters Swimming Australia Portal](https
 ## How to use
 Run the app.py file. 
 
+## Features
+
+## Future improvements
 
 
 
